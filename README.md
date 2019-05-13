@@ -1,23 +1,41 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+Beneath the Surface: Unearthing Within-Person Variability and Mean Relations with Bayesian Mixed Models
+=======================================================================================================
+
 This document reproduces the analyses, plots, model comparisons, etc. included in the paper. The following is in order of appearance.
 
 The Mixed-Effects Location Scale Model
-======================================
+--------------------------------------
 
-Random Intercepts Only Model
-----------------------------
+### Random Intercepts Only Model
 
 A random intercepts model was first fitted to both the location and scale. For the *i*th person and *j*th trial in the congruent condition, the mean structure is defined as
 
+*y*<sub>*i**j*</sub> = *β*<sub>0</sub> + *u*<sub>0*i*</sub> + *ϵ*<sub>*i**j*</sub>,
+
 where *β*<sub>0</sub> is the fixed effect and *u*<sub>0*i*</sub> the individual deviation. More specifically, *β*<sub>0</sub> is the average of the individual means and for, say, the first subject (*i* = 1), the respective mean response time is *β*<sub>0</sub> + *u*<sub>01</sub>. This is not equivalent to estimating the empirical means, because of the hierarchical structure of the model. Before describing this aspect of the model, we must account for the \`\`errors''. While they are typically assumed to be normally distributed with a constant variance, this is not the case for the MELSM--i.e.,
+
+*σ*<sub>*ϵ*<sub>*i**j*</sub></sub><sup>2</sup> = exp\[*η*<sub>0</sub> + *u*<sub>1*i*</sub>\].
 
 Load the following packages and data:
 
-\`\`\`r library(brms) library(dplyr) library(ggplot2) library(cowplot) library(reshape) library(devtools) library(rethinking)
+``` r
+library(brms)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(reshape)
+library(devtools)
+library(rethinking)
 
-\# read the data ur &lt;- "<https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/contexteffects/FlankerStroopSimon/cleaning.R>" source\_url(ur) \`\`\` You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
+# read the data
+ur <- "https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/contexteffects/FlankerStroopSimon/cleaning.R"
+source_url(ur)
+```
+
+You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
 
 ``` r
 # melsm: mixed effects location scale model
@@ -142,13 +160,13 @@ plot_1A <- melt(re_mean_in) %>%
   scale_x_discrete(expand = c(0.01, 0.01)) +
   ylab("Mean") +
   xlab("Ascending Index") +
-  ggtitle("Incongruent Responses") +
+  ggtitle("Incongruent") +
   scale_y_continuous(breaks = c(0.6, 0.7, 0.77, 0.9, 1))
 
 plot_1A
 ```
 
-<img src="figures/README-unnamed-chunk-5-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-5-1.png" width="80%" style="display: block; margin: auto;" />
 
 Plot 1B:
 
@@ -220,7 +238,7 @@ plot_1B <- melt(re_sigma_in) %>%
 plot_1B
 ```
 
-<img src="figures/README-unnamed-chunk-6-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-6-1.png" width="80%" style="display: block; margin: auto;" />
 
 The following has the empirical and model based estimates in the same plot. Plot 1C:
 
@@ -348,13 +366,13 @@ plot_1D <- melt(re_mean_con) %>%
   scale_x_discrete(expand = c(0.01, 0.01)) +
   ylab("Mean") +
   xlab("Ascending Index") +
-  ggtitle("Congruent Responses") +
+  ggtitle("Congruent") +
   scale_y_continuous(breaks = c(0.6, 0.71, 0.8, 0.9, 1))
 
 plot_1D
 ```
 
-<img src="figures/README-unnamed-chunk-8-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-8-1.png" width="80%" style="display: block; margin: auto;" />
 
 ``` r
 re_sigma_con <- fit_3 %>% 
@@ -427,7 +445,7 @@ plot_1E <- melt(re_sigma_con) %>%
 plot_1E
 ```
 
-<img src="figures/README-unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-9-1.png" width="80%" style="display: block; margin: auto;" />
 
 Model based and emprical plot:
 
@@ -483,7 +501,7 @@ plot_1 <- plot_grid(plot_cong, plot_incong, nrow = 2)
 plot_1
 ```
 
-<img src="figures/README-unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" />
 
 ``` r
 # ggsave(filename = "plot_1.pdf", plot = plot_1, width = 9.5, height = 6.5)
@@ -584,4 +602,4 @@ lkj_dat %>%
                         values = c("solid", "longdash", "dotted", "dotdash"))
 ```
 
-<img src="figures/README-unnamed-chunk-13-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-13-1.png" width="80%" style="display: block; margin: auto;" />

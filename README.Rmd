@@ -11,32 +11,33 @@ knitr::opts_chunk$set(
   dpi = 500,
   fig.asp = 0.8,
   fig.width = 7,
-  out.width = "60%",
+  out.width = "80%",
   fig.align = "center"
 )
 ```
+# Beneath the Surface: Unearthing Within-Person Variability and Mean Relations with Bayesian Mixed Models
+
 This document reproduces the analyses, plots, model comparisons, etc. included in the paper. The following is in order of appearance.
 
-# The Mixed-Effects Location Scale Model
-## Random Intercepts Only Model
+## The Mixed-Effects Location Scale Model
+### Random Intercepts Only Model
 
 A random intercepts model was first fitted to both the location and scale. For the $i$th person and $j$th trial in the congruent condition, the mean structure is defined as
 
-\begin{align}
-\label{eq:int_only_mu}
+$$
 y_{ij} = \beta_0 + u_{0i} + \epsilon_{ij},
-\end{align}
+$$
 
 
 where $\beta_0$ is the fixed effect and $u_{0i}$ the individual deviation. More specifically, $\beta_0$ is the average of the individual means and for, say, the first subject ($i = 1$), the respective mean response time is $\beta_0 + u_{01}$. This is not equivalent to estimating the empirical means, because of the hierarchical structure of the model. Before describing this aspect of the model, we must account for the ``errors''. While they are typically assumed to be normally distributed with a constant variance, this is not the case for the MELSM--i.e., 
 
-\begin{equation}
+$$
 \sigma^2_{\epsilon_{ij}}  = \text{exp}[\eta_0 + u_{1i}].
-\end{equation}
+$$
 
 
 Load the following packages and data:
-  ```{r echo=T, message=F, warning=F}
+```{r echo=T, message=F, warning=F}
 library(brms)
 library(dplyr)
 library(ggplot2)
@@ -173,7 +174,7 @@ plot_1A <- melt(re_mean_in) %>%
   scale_x_discrete(expand = c(0.01, 0.01)) +
   ylab("Mean") +
   xlab("Ascending Index") +
-  ggtitle("Incongruent Responses") +
+  ggtitle("Incongruent") +
   scale_y_continuous(breaks = c(0.6, 0.7, 0.77, 0.9, 1))
 
 plot_1A
@@ -374,7 +375,7 @@ plot_1D <- melt(re_mean_con) %>%
   scale_x_discrete(expand = c(0.01, 0.01)) +
   ylab("Mean") +
   xlab("Ascending Index") +
-  ggtitle("Congruent Responses") +
+  ggtitle("Congruent") +
   scale_y_continuous(breaks = c(0.6, 0.71, 0.8, 0.9, 1))
 
 plot_1D
