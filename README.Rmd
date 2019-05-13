@@ -1,25 +1,57 @@
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
+---
+  output: github_document
+---
+  <!-- README.md is generated from README.Rmd. Please edit that file -->
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "figures/README-",
+  dev = "png",
+  dpi = 500,
+  fig.asp = 0.8,
+  fig.width = 7,
+  out.width = "60%",
+  fig.align = "center"
+)
+```
 This document reproduces the analyses, plots, model comparisons, etc. included in the paper. The following is in order of appearance.
 
-The Mixed-Effects Location Scale Model
-======================================
+# The Mixed-Effects Location Scale Model
+## Random Intercepts Only Model
 
-Random Intercepts Only Model
-----------------------------
+A random intercepts model was first fitted to both the location and scale. For the $i$th person and $j$th trial in the congruent condition, the mean structure is defined as
 
-A random intercepts model was first fitted to both the location and scale. For the *i*th person and *j*th trial in the congruent condition, the mean structure is defined as
+\begin{align}
+\label{eq:int_only_mu}
+y_{ij} = \beta_0 + u_{0i} + \epsilon_{ij},
+\end{align}
 
-where *β*<sub>0</sub> is the fixed effect and *u*<sub>0*i*</sub> the individual deviation. More specifically, *β*<sub>0</sub> is the average of the individual means and for, say, the first subject (*i* = 1), the respective mean response time is *β*<sub>0</sub> + *u*<sub>01</sub>. This is not equivalent to estimating the empirical means, because of the hierarchical structure of the model. Before describing this aspect of the model, we must account for the \`\`errors''. While they are typically assumed to be normally distributed with a constant variance, this is not the case for the MELSM--i.e.,
+
+where $\beta_0$ is the fixed effect and $u_{0i}$ the individual deviation. More specifically, $\beta_0$ is the average of the individual means and for, say, the first subject ($i = 1$), the respective mean response time is $\beta_0 + u_{01}$. This is not equivalent to estimating the empirical means, because of the hierarchical structure of the model. Before describing this aspect of the model, we must account for the ``errors''. While they are typically assumed to be normally distributed with a constant variance, this is not the case for the MELSM--i.e., 
+
+\begin{equation}
+\sigma^2_{\epsilon_{ij}}  = \text{exp}[\eta_0 + u_{1i}].
+\end{equation}
+
 
 Load the following packages and data:
+  ```{r echo=T, message=F, warning=F}
+library(brms)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(reshape)
+library(devtools)
+library(rethinking)
 
-\`\`\`r library(brms) library(dplyr) library(ggplot2) library(cowplot) library(reshape) library(devtools) library(rethinking)
+# read the data
+ur <- "https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/contexteffects/FlankerStroopSimon/cleaning.R"
+source_url(ur)
 
-\# read the data ur &lt;- "<https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/contexteffects/FlankerStroopSimon/cleaning.R>" source\_url(ur) \`\`\` You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
-
-``` r
+```
+You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
+```{r,  eval = F, echo=T, message=F, warning=F}
 # melsm: mixed effects location scale model
 # me: mixed effects model
 fit_1 <- brm(bf(rt ~ 1 + (1|c|ID), sigma ~ 1 + (1|c|ID)), 
@@ -49,11 +81,11 @@ fit_4 <- brm(bf(rt ~ 1 + (1|c|ID)),
              inits = 0, cores = 2, 
              chains = 2, iter = 2000, 
              warmup = 1000)
+
 ```
 
 Load the fitted models, and then compare with WAIC.
-
-``` r
+```{r warning=F}
 load("fit_1.RData")
 load("fit_2.Rdata")
 load("fit_3.Rdata")
@@ -70,8 +102,7 @@ load("fit_4.Rdata")
 ```
 
 Make plot 1 from the fitted objects. First for the incongruent model. Figure 1 (bottom):
-
-``` r
+```{r message = F}
 # use "Times" font
 windowsFonts(Times = windowsFont("Times New Roman"))
 
@@ -148,11 +179,9 @@ plot_1A <- melt(re_mean_in) %>%
 plot_1A
 ```
 
-<img src="figures/README-unnamed-chunk-5-1.png" width="60%" style="display: block; margin: auto;" />
 
 Plot 1B:
-
-``` r
+```{r warning = F, message = F}
 # extract posterior estimates
 re_sigma_in <- fit_1 %>% 
   data.frame() %>% 
@@ -220,11 +249,9 @@ plot_1B <- melt(re_sigma_in) %>%
 plot_1B
 ```
 
-<img src="figures/README-unnamed-chunk-6-1.png" width="60%" style="display: block; margin: auto;" />
 
 The following has the empirical and model based estimates in the same plot. Plot 1C:
-
-``` r
+```{r }
 dat_model_in <- data.frame(type = "Hierarchical",  
                            mean = colMeans(re_mean_in), 
                            sd = colMeans(re_sigma_in))
@@ -271,8 +298,7 @@ plot_incong <- plot_grid(plot_1A, plot_1B, plot_1C, nrow = 1)
 ```
 
 Continue making plot 1 from the fitted objects. Now for the congruent model. Figure 1 (top):
-
-``` r
+```{r message=F}
 re_mean_con <- fit_3 %>% 
   data.frame() %>% 
   select(contains("r_ID")) %>% 
@@ -354,9 +380,8 @@ plot_1D <- melt(re_mean_con) %>%
 plot_1D
 ```
 
-<img src="figures/README-unnamed-chunk-8-1.png" width="60%" style="display: block; margin: auto;" />
 
-``` r
+```{r message=F}
 re_sigma_con <- fit_3 %>% 
   data.frame() %>% 
   select(contains("r_ID__sigma")) 
@@ -427,11 +452,9 @@ plot_1E <- melt(re_sigma_con) %>%
 plot_1E
 ```
 
-<img src="figures/README-unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;" />
 
 Model based and emprical plot:
-
-``` r
+```{r}
 dat_model_con <- data.frame(type = "Hierarchical",  
                             mean = colMeans(re_mean_con), 
                             sd = colMeans(re_sigma_con))
@@ -481,17 +504,12 @@ plot_cong <- plot_grid(plot_1D, plot_1E, plot_1F, nrow = 1)
 plot_1 <- plot_grid(plot_cong, plot_incong, nrow = 2)
 
 plot_1
-```
-
-<img src="figures/README-unnamed-chunk-10-1.png" width="60%" style="display: block; margin: auto;" />
-
-``` r
 # ggsave(filename = "plot_1.pdf", plot = plot_1, width = 9.5, height = 6.5)
 ```
 
-We also breifly compared the correlation between the model based and emprical means and standard deviations. For the incongruent responses:
 
-``` r
+We also breifly compared the correlation between the model based and emprical means and standard deviations. For the incongruent responses:
+```{r}
 # correlate incongruent M's and SD's
 
 # emprical
@@ -506,14 +524,10 @@ model_cor_sd_in <- sd(posterior_samples(fit_1, pars = "cor")[,1])
 data.frame(type = c("emprical", "model"), 
            cor = c(emp_cor_in, model_cor_in),
            cor_sd = c(emp_cor_sd_in, model_cor_sd_in))
-#>       type       cor     cor_sd
-#> 1 emprical 0.6123496 0.05915010
-#> 2    model 0.6684826 0.06196056
 ```
 
 Now for the congruent responses:
-
-``` r
+```{r}
 # correlate congruent M's and SD's
 
 # emprical
@@ -528,14 +542,10 @@ model_cor_sd_con <- sd(posterior_samples(fit_3, pars = "cor")[,1])
 data.frame(type = c("emprical", "model"), 
            cor = c(emp_cor_con, model_cor_con),
            cor_sd = c(emp_cor_sd_con, model_cor_sd_con))
-#>       type       cor     cor_sd
-#> 1 emprical 0.6626116 0.05772447
-#> 2    model 0.7146246 0.05241439
 ```
 
 Thus far the work showed how the mixed-effects location scale model can estimate mean-variance relations. This lead naturally to testing the correlations. The following visualizes the LKJ prior distribution for the partial correlations:
-
-``` r
+```{r}
 ##############################
 #### lkj marginals ###########
 ##############################
@@ -582,6 +592,6 @@ lkj_dat %>%
   ylab("Density") +
   scale_linetype_manual(name = expression("  "~italic(nu)), 
                         values = c("solid", "longdash", "dotted", "dotdash"))
+
 ```
 
-<img src="figures/README-unnamed-chunk-13-1.png" width="60%" style="display: block; margin: auto;" />
