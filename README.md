@@ -35,7 +35,7 @@ ur <- "https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/con
 source_url(ur)
 ```
 
-You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
+Estimate the following models. Note that two are mixed effects models, and are used for model comparison.
 
 ``` r
 # melsm: mixed effects location scale model
@@ -69,21 +69,37 @@ fit_4 <- brm(bf(rt ~ 1 + (1|c|ID)),
              warmup = 1000)
 ```
 
-Load the fitted models, and then compare with WAIC.
+Compare with WAIC.
 
 ``` r
-load("fit_1.RData")
-load("fit_2.Rdata")
-load("fit_3.Rdata")
-load("fit_4.Rdata")
+incong_waic <- waic(fit_1, fit_2)
+cong_waic <- waic(fit_3, fit_4)
+```
 
-incong_waic <- WAIC(fit_1, fit_2)
-#> No WAIC method for object of class 'brmsfit'. Returning AIC instead.
-cong_waic <- WAIC(fit_3, fit_4)
-#> No WAIC method for object of class 'brmsfit'. Returning AIC instead.
+Incongruent comparison:
 
-save(incong_waic, file = "incong_waic.Rdata")
-save(cong_waic, file = "cong_waic.Rdata")
+``` r
+# difference
+incong_waic$ic_diffs__
+#>                    WAIC       SE
+#> fit_1 - fit_2 -427.4586 76.32362
+
+# SEs away from zero
+abs(incong_waic$ic_diffs__[1]) / incong_waic$ic_diffs__[2]
+#> [1] 5.600607
+```
+
+Congruent comparison:
+
+``` r
+# difference
+cong_waic$ic_diffs__
+#>                    WAIC       SE
+#> fit_3 - fit_4 -810.2488 113.5126
+
+# SEs away from zero
+abs(cong_waic$ic_diffs__[1]) / cong_waic$ic_diffs__[2]
+#> [1] 7.137966
 ```
 
 Make plot 1 from the fitted objects. First for the incongruent model. Figure 1 (bottom):
@@ -165,7 +181,7 @@ plot_1A <- melt(re_mean_in) %>%
 plot_1A
 ```
 
-<img src="figures/README-unnamed-chunk-5-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-9-1.png" width="80%" style="display: block; margin: auto;" />
 
 Plot 1B:
 
@@ -237,7 +253,7 @@ plot_1B <- melt(re_sigma_in) %>%
 plot_1B
 ```
 
-<img src="figures/README-unnamed-chunk-6-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" />
 
 The following has the empirical and model based estimates in the same plot. Plot 1C:
 
@@ -371,7 +387,7 @@ plot_1D <- melt(re_mean_con) %>%
 plot_1D
 ```
 
-<img src="figures/README-unnamed-chunk-8-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-12-1.png" width="80%" style="display: block; margin: auto;" />
 
 ``` r
 re_sigma_con <- fit_3 %>% 
@@ -444,7 +460,7 @@ plot_1E <- melt(re_sigma_con) %>%
 plot_1E
 ```
 
-<img src="figures/README-unnamed-chunk-9-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-13-1.png" width="80%" style="display: block; margin: auto;" />
 
 Model based and emprical plot:
 
@@ -500,7 +516,7 @@ plot_1 <- plot_grid(plot_cong, plot_incong, nrow = 2)
 plot_1
 ```
 
-<img src="figures/README-unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-14-1.png" width="80%" style="display: block; margin: auto;" />
 
 ``` r
 ggsave(filename = "plot_1.pdf", plot = plot_1, width = 9.5, height = 6.5)
@@ -572,32 +588,11 @@ dat_con
 Thus far the work showed how the mixed-effects location scale model can estimate mean-variance relations. This lead naturally to testing the correlations. The following visualizes the LKJ prior distribution for the partial correlations:
 
 ``` r
-##############################
-#### lkj marginals ###########
-##############################
-# nu 1
-nu_1 <- rethinking::rlkjcorr(1000000, 
-                             K = 4, 
-                             eta = 1)[,,1][,2]
-# nu 2
-nu_2  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 2)[,,1][,2]
-# nu 3
-nu_3  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 3)[,,1][,2]
-# nu 4
-nu_4  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 4)[,,1][,2]
+n_samps <- 10000
+prior_samples  <- lapply(1:4, function(x) rethinking::rlkjcorr(n_samps, K = 4, eta = x)[,,1][,2])
 
-# data for plotting
-lkj_dat <- data.frame(nu = as.factor(rep(1:4, each = 10000)), 
-                      sample = c(nu_1[1:10000], 
-                                 nu_2[1:10000],
-                                 nu_3[1:10000], 
-                                 nu_4[1:10000]))
+lkj_dat <- data.frame(nu = as.factor(rep(1:4, each = n_samps)), 
+                      sample = unlist(prior_samples))
 
 lkj_dat %>% 
   ggplot() +
@@ -620,7 +615,7 @@ lkj_dat %>%
                         values = c("solid", "longdash", "dotted", "dotdash"))
 ```
 
-<img src="figures/README-unnamed-chunk-13-1.png" width="80%" style="display: block; margin: auto;" />
+<img src="figures/README-unnamed-chunk-17-1.png" width="80%" style="display: block; margin: auto;" />
 
 We proceed to fit the full models:
 

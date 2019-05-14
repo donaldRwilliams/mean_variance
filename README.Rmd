@@ -51,7 +51,7 @@ ur <- "https://raw.githubusercontent.com/PerceptionCognitionLab/data0/master/con
 source_url(ur)
 
 ```
-You can estimate the following models, or assuming the entire working directory was downloaded, you can skip ahead and load the fitted objects. Note that two are mixed effects models, and are used for model comparison.
+Estimate the following models. Note that two are mixed effects models, and are used for model comparison.
 ```{r,  eval = F, echo=T, message=F, warning=F}
 # melsm: mixed effects location scale model
 # me: mixed effects model
@@ -84,19 +84,40 @@ fit_4 <- brm(bf(rt ~ 1 + (1|c|ID)),
              warmup = 1000)
 
 ```
-
-Load the fitted models, and then compare with WAIC.
-```{r warning=F}
+Compare with WAIC.
+```{r, echo=F}
 load("fit_1.RData")
 load("fit_2.Rdata")
 load("fit_3.Rdata")
 load("fit_4.Rdata")
+```
 
-incong_waic <- WAIC(fit_1, fit_2)
-cong_waic <- WAIC(fit_3, fit_4)
+```{r warning=F, message=F, eval=F}
+incong_waic <- waic(fit_1, fit_2)
+cong_waic <- waic(fit_3, fit_4)
+```
 
-save(incong_waic, file = "incong_waic.Rdata")
-save(cong_waic, file = "cong_waic.Rdata")
+Incongruent comparison:
+```{r, echo=F}
+load("incong_waic.Rdata")
+load("cong_waic.Rdata")
+```
+
+```{r}
+# difference
+incong_waic$ic_diffs__
+
+# SEs away from zero
+abs(incong_waic$ic_diffs__[1]) / incong_waic$ic_diffs__[2]
+```
+
+Congruent comparison:
+```{r}
+# difference
+cong_waic$ic_diffs__
+
+# SEs away from zero
+abs(cong_waic$ic_diffs__[1]) / cong_waic$ic_diffs__[2]
 ```
 
 Make plot 1 from the fitted objects. First for the incongruent model. Figure 1 (bottom):
@@ -563,32 +584,11 @@ dat_con
 
 Thus far the work showed how the mixed-effects location scale model can estimate mean-variance relations. This lead naturally to testing the correlations. The following visualizes the LKJ prior distribution for the partial correlations:
 ```{r}
-##############################
-#### lkj marginals ###########
-##############################
-# nu 1
-nu_1 <- rethinking::rlkjcorr(1000000, 
-                             K = 4, 
-                             eta = 1)[,,1][,2]
-# nu 2
-nu_2  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 2)[,,1][,2]
-# nu 3
-nu_3  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 3)[,,1][,2]
-# nu 4
-nu_4  <- rethinking::rlkjcorr(1000000, 
-                              K = 4, 
-                              eta = 4)[,,1][,2]
+n_samps <- 10000
+prior_samples  <- lapply(1:4, function(x) rethinking::rlkjcorr(n_samps, K = 4, eta = x)[,,1][,2])
 
-# data for plotting
-lkj_dat <- data.frame(nu = as.factor(rep(1:4, each = 10000)), 
-                      sample = c(nu_1[1:10000], 
-                                 nu_2[1:10000],
-                                 nu_3[1:10000], 
-                                 nu_4[1:10000]))
+lkj_dat <- data.frame(nu = as.factor(rep(1:4, each = n_samps)), 
+                      sample = unlist(prior_samples))
 
 lkj_dat %>% 
   ggplot() +
