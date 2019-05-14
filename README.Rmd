@@ -92,14 +92,11 @@ load("fit_2.Rdata")
 load("fit_3.Rdata")
 load("fit_4.Rdata")
 
-# incong_waic <- WAIC(fit_1, fit_2)
-# cong_waic <- WAIC(fit_3, fit_4)
+incong_waic <- WAIC(fit_1, fit_2)
+cong_waic <- WAIC(fit_3, fit_4)
 
-# incongruent model comparison
-# incong_waic$ic_diffs__
-
-# congruent model comparison
-# cong_waic$ic_diffs__
+save(incong_waic, file = "incong_waic.Rdata")
+save(cong_waic, file = "cong_waic.Rdata")
 ```
 
 Make plot 1 from the fitted objects. First for the incongruent model. Figure 1 (bottom):
@@ -505,7 +502,7 @@ plot_cong <- plot_grid(plot_1D, plot_1E, plot_1F, nrow = 1)
 plot_1 <- plot_grid(plot_cong, plot_incong, nrow = 2)
 
 plot_1
-# ggsave(filename = "plot_1.pdf", plot = plot_1, width = 9.5, height = 6.5)
+ggsave(filename = "plot_1.pdf", plot = plot_1, width = 9.5, height = 6.5)
 ```
 
 
@@ -515,34 +512,53 @@ We also breifly compared the correlation between the model based and emprical me
 
 # emprical
 emp_cor_in <- cor(dat_data_in[,2:3])[1,2]
+
+# bootstrap (n = 121)
 boot_in <- replicate(1000, cor(dat_data_in[sample(1:121, 121, replace = T),2:3])[1,2])
+
+# boostrap SE
 emp_cor_sd_in <- sd(boot_in)
 
-# model
+# model mean
 model_cor_in <- mean(posterior_samples(fit_1, pars = "cor")[,1])
+
+# model SE (post SD)
 model_cor_sd_in <- sd(posterior_samples(fit_1, pars = "cor")[,1])
 
-data.frame(type = c("emprical", "model"), 
+# data frame
+dat_in <- data.frame(type = c("emprical", "model"), 
            cor = c(emp_cor_in, model_cor_in),
            cor_sd = c(emp_cor_sd_in, model_cor_sd_in))
+# results
+dat_in
 ```
 
 Now for the congruent responses:
 ```{r}
 # correlate congruent M's and SD's
 
-# emprical
+# empirical
 emp_cor_con <- cor(dat_data_con[,2:3])[1,2]
+
+# boostrap (n = 121)
 boot_con <- replicate(1000, cor(dat_data_con[sample(1:121, 121, replace = T),2:3])[1,2])
+
+# boostrap SE
 emp_cor_sd_con <- sd(boot_con)
 
-# model
+# model mean
 model_cor_con <- mean(posterior_samples(fit_3, pars = "cor")[,1])
+
+# model SE (post SD)
 model_cor_sd_con <- sd(posterior_samples(fit_3, pars = "cor")[,1])
 
-data.frame(type = c("emprical", "model"), 
+# data frame
+dat_con <- data.frame(type = c("emprical", "model"), 
            cor = c(emp_cor_con, model_cor_con),
            cor_sd = c(emp_cor_sd_con, model_cor_sd_con))
+
+# results
+dat_con
 ```
 
 Thus far the work showed how the mixed-effects location scale model can estimate mean-variance relations. This lead naturally to testing the correlations. The following visualizes the LKJ prior distribution for the partial correlations:
@@ -595,4 +611,107 @@ lkj_dat %>%
                         values = c("solid", "longdash", "dotted", "dotdash"))
 
 ```
+
+We proceed to fit the full models:
+```{r, eval=F}
+form <- brmsformula(rt ~ congruency + (congruency |c| ID), 
+                           sigma  ~ congruency + (congruency |c| ID))
+
+
+
+priors <- c(
+  # correlations
+  set_prior("lkj(2)", class = "cor"),
+  # location random SD
+  set_prior("normal(0,0.25)", 
+            class = "sd", 
+            coef = "congruencyincongruent", 
+            group = "ID"),
+  # location random SD
+  set_prior("normal(0,0.25)",
+            class = "sd", 
+            coef = "Intercept",
+            group = "ID"),
+  # scale random SD
+  set_prior("normal(0,1)", 
+            class = "sd",
+            coef = "congruencyincongruent", 
+            group = "ID", 
+            dpar = "sigma"), 
+  # scale random SD
+  set_prior("normal(0,1)", 
+            class = "sd", 
+            coef = "Intercept", 
+            group = "ID", 
+            dpar = "sigma"), 
+  # fixed effect priors
+  set_prior("normal(0,5)", 
+            class = "b"),
+  set_prior("normal(0,5)", 
+            class = "b", 
+            dpar = "sigma"),
+  set_prior("normal(0,5)", 
+            class = "Intercept"),
+  set_prior("normal(0,5)", 
+            class = "Intercept", 
+            dpar = "sigma"))
+
+fit_stroop <- brm(form, data = stroop, 
+                  inits = 0, cores = 4, 
+                  chains = 4, iter = 3500, 
+                  warmup = 1000, prior = priors)
+
+
+fit_flank <- brm(form_stroop, data = flanker, 
+                 inits = 0, cores = 4, 
+                 chains = 4, iter = 3500, 
+                 warmup = 1000,  
+                 prior = priors)
+
+save(fit_stroop, file = "fit_stroop.Rdata")
+save(fit_flank, file = "fit_flank.Rdata")
+
+```
+
+
+Now the customary mixed-effects model (no scale model):
+
+```{r, eval=F}
+form_me <- brmsformula(rt ~ congruency + (congruency |c| ID))
+
+
+# ME priors 
+priors_me <- c(
+  set_prior("lkj(2)", class = "cor"),
+  # location random SD
+  set_prior("normal(0,0.25)", 
+            class = "sd", 
+            coef = "Intercept", 
+            group = "ID"),
+  set_prior("normal(0,0.25)", 
+            class = "sd",
+            coef = "congruencyincongruent", 
+            group = "ID"), 
+                  # fixed effect priors
+                  set_prior("normal(0,5)", 
+                            class = "b"),
+                  set_prior("normal(0,5)", 
+                            class = "Intercept"))
+
+fit_stroop_me <- brm(form_me, data = stroop, 
+                  inits = 0, cores = 4, 
+                  chains = 4, iter = 3500, 
+                  warmup = 1000, prior = priors_me)
+
+
+fit_flank_me <- brm(form_me, data = flanker, 
+                    inits = 0, cores = 4, 
+                    chains = 4, iter = 3500, 
+                    warmup = 1000,  
+                    prior = priors_me)
+
+
+````
+
+To address concerns of overfitting, we compared these models with WAIC:
 
