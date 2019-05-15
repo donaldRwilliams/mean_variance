@@ -738,3 +738,144 @@ abs(flank_waic$ic_diffs__[1]) / flank_waic$ic_diffs__[2]
 ```
 
 Note that this was done to show the MELSM is preferred over the customary mixed-effects model. In our experience, we have never come across an example in which the MELSM did not have (much) lower WAIC (or LOO). 
+
+The following contructs Figure 3 (Panel A). Start with the Stroop task. The MELSM is plotted with:
+```{r}
+load("fit_stroop.Rdata")
+load("fit_stroop_me.Rdata")
+load("fit_flank.Rdata")
+load("fit_flank_me.Rdata")
+```
+
+```{r}
+# point estimates from linear regression
+coefs_nonreg <- unlist(lapply(1:121, function(x) coefficients(lm(rt ~ congruency, data = subset(stroop, ID == x)))[2]))
+
+# "Stroop effect"
+melsm_stroop <- round(posterior_summary(fit_stroop, pars = "b_")[3,1], 3)
+
+
+
+dat_stroop <- data.frame(y = coefs_nonreg, 
+                         index= 1:121) %>% 
+              arrange(y) %>%
+              mutate(index2 = as.factor(1:121))
+
+# melsm
+melsm_stroop_plot <- coef(fit_stroop, probs = c(0.05, 0.95))$ID[,,2] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < melsm_stroop & Q95 > melsm_stroop, 0, 1)),
+         index = as.factor(1:121),
+         type = "MELSM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = melsm_stroop,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(beta[1])* " + " *italic(u[1][i])*"  (ms)", "Stroop Effect on RT"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  xlab("") + 
+  geom_path(inherit.aes = F, 
+            data = dat_stroop, 
+            aes(x = as.numeric(index2), 
+                y = y), 
+            color = "grey",
+            size = 1.5, alpha = 0.75) +
+  scale_y_continuous(breaks = seq(-.1, .2, 0.05), 
+                     labels = seq(-.1, .2, 0.05) * 1000) +
+  scale_x_discrete(expand = c(0.015, 0.015)) +
+  ggtitle("")
+
+#melsm_stroop_plot
+```
+
+
+The ME (mixed-effect model) is plotted with:
+```{r}
+# Stroop effect
+me_stroop <- round(posterior_summary(fit_stroop_me, pars = "b_")[2,1], 3)
+
+# plot
+me_stroop_plot <- coef(fit_stroop_me, probs = c(0.05, 0.95))$ID[,,2] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < me_stroop & Q95 > me_stroop, 0, 1)),
+         index = as.factor(1:121),
+         type = "MEM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = me_stroop,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(beta[1])* " + " *italic(u[1][i])*"  (ms)", "Stroop Effect on RT"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  xlab("") + 
+  geom_path(inherit.aes = F, 
+            data = dat_stroop, 
+            aes(x = as.numeric(index2), 
+                y = y), 
+            color = "grey",
+            size = 1.5, 
+            alpha = 0.75) +
+
+  scale_y_continuous(breaks = seq(-.1, .2, 0.05), 
+                     labels = seq(-.1, .2, 0.05) * 1000) +
+  ggtitle("Stroop") +
+  scale_x_discrete(expand = c(0.015, 0.015)) 
+
+#me_stroop_plot
+```
+
+Combine plots:
+```{r}
+plot_grid(me_stroop_plot, melsm_stroop_plot)
+```
