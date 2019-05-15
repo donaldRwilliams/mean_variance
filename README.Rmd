@@ -590,7 +590,7 @@ prior_samples  <- lapply(1:4, function(x) rethinking::rlkjcorr(n_samps, K = 4, e
 lkj_dat <- data.frame(nu = as.factor(rep(1:4, each = n_samps)), 
                       sample = unlist(prior_samples))
 
-lkj_dat %>% 
+plot_2A <- lkj_dat %>% 
   ggplot() +
   # for linetype
   geom_line(stat = "density", 
@@ -610,6 +610,7 @@ lkj_dat %>%
   scale_linetype_manual(name = expression("  "~italic(nu)), 
                         values = c("solid", "longdash", "dotted", "dotdash"))
 
+plot_2A
 ```
 
 We proceed to fit the full models:
@@ -2003,3 +2004,70 @@ plot_7 <- plot_grid(sens_legend,
                     rel_heights = c(1,10))
 plot_7
 ```
+
+
+At a posterior by prior plot to figure 2:
+```{r}
+
+cors <- posterior_samples(fit_stroop, pars = "cor_")
+
+
+post_samps <- cors$cor_ID__congruencyincongruent__sigma_congruencyincongruent
+
+prior_samps <- rethinking::rlkjcorr(10000, K = 4, eta = 2)[,,1][,2]
+
+
+
+
+dens_post <- density(post_samps, n = 10000)
+dens_prior <- density(prior_samps, n = 10000)
+
+# density at zero
+dens_post <- approx(dens_post$x,dens_post$y, xout = c(0))$y
+dens_prior <- approx(dens_prior$x,dens_prior$y, xout = c(0))$y
+if(is.na( dens_post)) dens_post <- 0
+
+
+dat_plot <- data.frame(samples = c(post_samps, prior_samps),
+                       dist = rep(c("Posterior", "Prior"), each = length(post_samps)))
+
+
+
+plot_2B <- ggplot(dat_plot, aes(x = samples,
+                        group = dist,
+                     fill = dist)) +
+
+  geom_density(alpha = 0.5) +
+  annotate(geom = "point",
+           x = 0,
+           y = dens_post,
+           color = "black",
+           size = 5) +
+  annotate(geom = "point",
+           x = 0,
+           y = dens_prior,
+           color = "black",
+           size = 5) +
+  scale_linetype(name = "") +
+  theme_bw(base_family = "Times") +
+  ylab("Density") +
+  xlab("Marginal Distribution") +
+  scale_fill_manual(values = c("#CC79A7", "#009E73"), name = "Distribution") +
+  theme(
+        legend.position=c(0,1),
+        legend.justification = c(0,1),
+        legend.background = element_rect(color = "black"),
+        panel.grid.minor.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.title = element_text(size = 14),
+        legend.direction = "horizontal") 
+
+
+plot_2 <- plot_grid(plot_2A, plot_2B, nrow = 1)
+plot_2
+
+ggsave(plot_2, filename = "plot_2.pdf", width = 7, height = 3) 
+
+```
+
+
