@@ -884,7 +884,11 @@ Combine plots:
 
 ``` r
 plot_stroop <- plot_grid(me_stroop_plot, melsm_stroop_plot)
+
+plot_stroop
 ```
+
+<img src="figures/README-unnamed-chunk-26-1.png" width="80%" style="display: block; margin: auto;" />
 
 Next the Flanker task. The MELSM is plotted with:
 
@@ -1018,7 +1022,11 @@ plot_flanker <-  plot_grid(me_flanker_plot, melsm_flanker_plot)
 
 # panel A
 A <- plot_grid(plot_stroop, plot_flanker, nrow = 2)
+
+plot_flanker
 ```
+
+<img src="figures/README-unnamed-chunk-29-1.png" width="80%" style="display: block; margin: auto;" />
 
 The above is Panel A. Panel B highlights shrinkage from the Flanker model:
 
