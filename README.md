@@ -715,4 +715,30 @@ fit_flank_me <- brm(form_me, data = flanker,
                     prior = priors_me)
 ```
 
-To address concerns of overfitting, we compared these models with WAIC:
+To address concerns of overfitting, we compared these models with WAIC. The Stroop task:
+
+``` r
+# stroop task
+stroop_waic$ic_diffs__
+#>                                 WAIC       SE
+#> fit_stroop - fit_stroop_me -1370.327 138.5454
+
+# SEs away from zero
+abs(stroop_waic$ic_diffs__[1]) / stroop_waic$ic_diffs__[2]
+#> [1] 9.89082
+```
+
+The Flanker task:
+
+``` r
+# flanker task
+flank_waic$ic_diffs__
+#>                               WAIC       SE
+#> fit_flank - fit_flank_me -1142.353 203.2134
+
+# SEs away from zero
+abs(flank_waic$ic_diffs__[1]) / flank_waic$ic_diffs__[2]
+#> [1] 5.621443
+```
+
+Note that this was done to show the MELSM is preferred over the customary mixed-effects model. In our experience, we have never come across an example in which the MELSM did not have (much) lower WAIC (or LOO).
