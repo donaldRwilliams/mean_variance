@@ -2103,8 +2103,3 @@ plot_2
 ```
 
 <img src="figures/README-unnamed-chunk-45-1.png" width="80%" style="display: block; margin: auto;" />
-
-``` r
-
-ggsave(plot_2, filename = "plot_2.pdf", width = 7, height = 3) 
-```

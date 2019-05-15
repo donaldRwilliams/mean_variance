@@ -2065,9 +2065,6 @@ plot_2B <- ggplot(dat_plot, aes(x = samples,
 
 plot_2 <- plot_grid(plot_2A, plot_2B, nrow = 1)
 plot_2
-
-ggsave(plot_2, filename = "plot_2.pdf", width = 7, height = 3) 
-
 ```
 
 
