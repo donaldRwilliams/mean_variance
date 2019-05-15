@@ -746,13 +746,6 @@ Note that this was done to show the MELSM is preferred over the customary mixed-
 The following contructs Figure 3 (Panel A). Start with the Stroop task. The MELSM is plotted with:
 
 ``` r
-load("fit_stroop.Rdata")
-load("fit_stroop_me.Rdata")
-load("fit_flank.Rdata")
-load("fit_flank_me.Rdata")
-```
-
-``` r
 # point estimates from linear regression
 coefs_nonreg <- unlist(lapply(1:121, function(x) coefficients(lm(rt ~ congruency, data = subset(stroop, ID == x)))[2]))
 
@@ -1154,3 +1147,893 @@ B
 ```
 
 <img src="figures/README-unnamed-chunk-32-1.png" width="80%" style="display: block; margin: auto;" />
+
+Now Figure 4. First scale intercept for the Stroop task:
+
+``` r
+
+# scale intercepts
+int_scale_stroop <- posterior_summary(fit_stroop, pars = "b_")[2,1]
+int_scale_flank <- posterior_summary(fit_flank, pars = "b_")[2,1]
+
+# scale effects
+stroop_scale_stroop <- posterior_summary(fit_stroop, pars = "b_")[4,1]
+flank_scale_flank <- posterior_summary(fit_flank, pars = "b_")[4,1]
+
+int_scale_stroop_plot <- coef(fit_stroop, probs = c(0.05, 0.95))$ID[,,3] %>% exp(.) %>%
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < exp(int_scale_stroop) & Q95 > exp(int_scale_stroop), 0, 1)),
+         index = as.factor(1:121),
+         type = "Stroop") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = exp(int_scale_stroop),
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i])* "  (SD)", "Congruent IIV"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  scale_y_continuous(limits = c(0, .6), 
+                     labels = seq(0, 0.5, .1), 
+                     breaks = seq(0, 0.5, .1))
+
+int_scale_stroop_plot
+```
+
+<img src="figures/README-unnamed-chunk-33-1.png" width="80%" style="display: block; margin: auto;" />
+
+Second scale intercept for the Flanker task:
+
+``` r
+# plot
+int_scale_flank_plot <- coef(fit_flank, probs = c(0.05, 0.95))$ID[,,3] %>% exp(.) %>%
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < exp(int_scale_flank) & Q95 > exp(int_scale_flank), 0, 1)),
+         index = as.factor(1:121),
+         type = "Flanker") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = exp(int_scale_flank),
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i])* "  (SD)", "Congruent IIV"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  scale_y_continuous(limits = c(0, .6), 
+                     labels = seq(0, 0.5, .1), 
+                     breaks = seq(0, 0.5, .1))
+
+int_scale_flank_plot
+```
+
+<img src="figures/README-unnamed-chunk-34-1.png" width="80%" style="display: block; margin: auto;" />
+
+Now the "Stroop/Flanker" effects on IIV:
+
+``` r
+# % change
+labs <- c("-63 %", "-39 %", "0 %", "+65 %", "+172 %")
+
+stroop_scale_stroop_plot <- coef(fit_stroop, probs = c(0.05, 0.95))$ID[,,4] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < stroop_scale_stroop & Q95 > stroop_scale_stroop, 0, 1)),
+         index = as.factor(1:121),
+         type = "MELSM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = stroop_scale_stroop,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x =element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_blank(),
+        strip.text = element_blank()) +
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]), "Stroop Effect on IIV"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("")  +
+  scale_y_continuous(limits = c(-1, 1.1),  
+                     labels = labs) +
+ xlab("Ascending Index") 
+
+stroop_scale_stroop_plot
+```
+
+<img src="figures/README-unnamed-chunk-35-1.png" width="80%" style="display: block; margin: auto;" />
+
+Next the "flanker effect" on IIV:
+
+``` r
+flank_scale_flank_plot <- coef(fit_flank, probs = c(0.05, 0.95))$ID[,,4] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < flank_scale_flank & Q95 > flank_scale_flank, 0, 1)),
+         index = as.factor(1:121),
+         type = "MELSM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = flank_scale_flank,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x =   element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_blank(),
+        strip.text = element_blank()) +
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]), "Flanker Effect on IIV"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  scale_y_continuous(limits = c(-1, 1.1), 
+                     labels = labs) +
+  xlab("Ascending Index") 
+
+flank_scale_flank_plot
+```
+
+<img src="figures/README-unnamed-chunk-36-1.png" width="80%" style="display: block; margin: auto;" />
+
+The above is panel A in the paper:
+
+``` r
+# combine intercept plots
+int_scale_plot <- plot_grid(int_scale_stroop_plot, int_scale_flank_plot)
+
+# combine slope plots
+cong_scale_plot <- plot_grid(stroop_scale_stroop_plot, flank_scale_flank_plot)
+
+# panel A
+scale_plot <- plot_grid(int_scale_plot, cong_scale_plot, nrow = 2, rel_heights = c(1, 1))
+
+scale_plot
+```
+
+<img src="figures/README-unnamed-chunk-37-1.png" width="80%" style="display: block; margin: auto;" />
+
+Panel B follows:
+
+``` r
+stroop_res <- coef(fit_stroop)$ID[,1,3:4] %>% 
+  data.frame() %>% 
+  mutate(cong = exp(sigma_Intercept), 
+         incong = exp(sigma_Intercept + sigma_congruencyincongruent)) %>% 
+  mutate(diff =  incong - cong) %>% 
+  arrange(diff)
+
+# select from tails of distribution
+stroop_res_sub <-stroop_res[c(1:10, 112:121),]
+
+dat_stroop_plot <- data.frame(iiv = c(stroop_res_sub$cong, stroop_res_sub$incong ), 
+                             Condition = rep(c("Congruent", "Incongruent"), each = 20),
+                             ID = as.factor(rep(1:20, times = 2)), 
+                             data = "Stroop")
+
+
+
+stroop_iiv_plot <- dat_stroop_plot %>% 
+  
+  ggplot(aes(x = Condition, y = iiv)) +
+  geom_line(aes(group = ID, x = Condition), 
+            alpha = 0.25, size = 1.25, 
+            position = position_dodge(0.05)) +
+  geom_point(aes(color = ID), 
+             show.legend = F, 
+             size = 6, 
+             position = position_dodge(.05)) +
+  ylab("Within-Person Variability  (SD)") +
+  facet_grid(~ data) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_text(size =14),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  xlab("") +
+  scale_color_grey()
+
+stroop_iiv_plot
+```
+
+<img src="figures/README-unnamed-chunk-38-1.png" width="80%" style="display: block; margin: auto;" />
+
+Now the Flaner IIV plot:
+
+``` r
+flank_res <- coef(fit_flank)$ID[,1,3:4] %>% 
+  data.frame() %>% 
+  mutate(cong = exp(sigma_Intercept), incong = exp(sigma_Intercept +sigma_congruencyincongruent )) %>% 
+  mutate(diff =  incong - cong) %>% 
+  arrange(diff)
+  
+flank_res_sub <- flank_res[c(1:10, 112:121),]
+
+dat_flank_plot <- data.frame(iiv = c(flank_res_sub$cong, flank_res_sub$incong), 
+                              Condition = rep(c("Congruenct", "Incongruent"), 
+                                              each = 20),
+                              ID = as.factor(rep(1:20, times = 2)), 
+                              data = "Flanker")
+
+flank_iiv_plot <- 
+  dat_flank_plot %>% ggplot(aes(x = Condition, 
+                                y = iiv)) +
+  geom_line(aes(group = ID, 
+                x = Condition), 
+            alpha = 0.25, 
+            size = 1.25, 
+            position = position_dodge(.05)) +
+  geom_point(aes(color = ID), 
+             show.legend = F, 
+             size = 6, 
+             position = position_dodge(.05)) +
+  ylab("Within-Person Variability  (SD)") +
+  facet_grid(~ data) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_text(size =14),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  xlab("") +
+  scale_color_grey() 
+
+flank_iiv_plot
+```
+
+<img src="figures/README-unnamed-chunk-39-1.png" width="80%" style="display: block; margin: auto;" />
+
+Next combine them:
+
+``` r
+iiv_plot <- plot_grid("", stroop_iiv_plot, 
+                      flank_iiv_plot, "", 
+                      rel_widths = c(1.5,8, 8, 1), 
+                      nrow = 1)
+iiv_plot
+```
+
+<img src="figures/README-unnamed-chunk-40-1.png" width="80%" style="display: block; margin: auto;" />
+
+Figure 5:
+
+``` r
+mu_con_stroop <- fit_stroop %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"Intercept"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+sigma_con_stroop <- fit_stroop %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"sigma_Intercept"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_31 <- data.frame(mu_con_stroop = mu_con_stroop[,1],
+                     sigma_con_stroop = sigma_con_stroop[,1])
+
+dat_31$facet <- "Stroop"
+
+plot_31 <- dat_31 %>%
+  ggplot(aes(y = sigma_con_stroop,
+             x = mu_con_stroop)) +
+  facet_grid( ~ facet) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+  geom_smooth(method = "lm",
+              color = "white",
+              se = FALSE) +
+  geom_point(aes(y = sigma_con_stroop,
+                 x = mu_con_stroop),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  xlab(expression(atop(italic(beta[0])* " + " *italic(u[0][i]), "Congruent RT"))) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i]), "Congruent IIV" )))
+
+
+sigma_effect_stroop <- fit_stroop %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"sigma_congruencyincongruent"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_41 <- data.frame(mu_con_stroop = mu_con_stroop[,1],
+                     sigma_effect_stroop = sigma_effect_stroop[,1])
+
+plot_41 <-
+  dat_41 %>%
+  ggplot(aes(y = sigma_effect_stroop,
+             x = mu_con_stroop)) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  # spectral gradient
+  scale_fill_distiller(palette = "Spectral",
+                       direction = 1) +
+  # fitted line
+  geom_smooth(method = "lm",
+              color = "white",
+              # no standard error
+              se = FALSE) +
+  # add points
+  geom_point(aes(y = sigma_effect_stroop,
+                 x = mu_con_stroop),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  # more all space in plot
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  # y label
+  xlab(expression(atop(italic(beta[0])* " + " *italic(u[0][i]), "Congruent RT"))) +
+  # x label
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]),  "Stroop Effect on IIV"))) 
+
+
+mu_effect_stroop <- fit_stroop %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"congruencyincongruent"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_32 <- data.frame(mu_effect_stroop = mu_effect_stroop[,1],
+                     sigma_con_stroop = sigma_con_stroop[,1])
+
+dat_32$facet <- "Stroop"
+plot_32 <- dat_32 %>%
+  ggplot(aes(x = mu_effect_stroop,
+             y = sigma_con_stroop)) +
+  facet_grid(~ facet ) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+    geom_smooth(method = "lm",
+                color = "white",
+                se = FALSE) +
+    geom_point(aes(x = mu_effect_stroop,
+                 y = sigma_con_stroop),
+               size = 2,
+               color = "black",
+               alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  xlab(expression(atop(italic(beta[1])* " + " *italic(u[1][i]),  "Stroop Effect on RT" ))) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i]), "Congruent IIV"))) 
+
+
+
+dat_42 <- data.frame(mu_effect_stroop = mu_effect_stroop[,1],
+                     sigma_effect_stroop = sigma_effect_stroop[,1])
+
+plot_42 <- dat_42 %>%
+  ggplot(aes(y = mu_effect_stroop,
+             x =  sigma_effect_stroop )) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+  geom_smooth(method = "lm",
+              color = "white",
+              se = FALSE) +
+  geom_point(aes(y = mu_effect_stroop,
+                 x = sigma_effect_stroop),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  xlab(expression(atop(italic(beta[1])* " + " *italic(u[1][i]), "Stroop Effect on RT"))) +
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]), "Stroop Effect on IIV"))) 
+
+
+fig_5 <- cowplot::plot_grid( cowplot::plot_grid(plot_31, plot_41, nrow = 2) , 
+                    cowplot::plot_grid(plot_32, plot_42, nrow = 2), nrow = 1)
+
+fig_5
+```
+
+<img src="figures/README-unnamed-chunk-41-1.png" width="80%" style="display: block; margin: auto;" />
+
+Figure 6:
+
+``` r
+fit_flanker <- fit_flank
+mu_con_flanker <- fit_flanker %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"Intercept"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+sigma_con_flanker <- fit_flanker %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"sigma_Intercept"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_31 <- data.frame(mu_con_flanker = mu_con_flanker[,1],
+                     sigma_con_flanker = sigma_con_flanker[,1])
+dat_31$facet <- "Flanker"
+plot_31 <- dat_31 %>%
+  ggplot(aes(y = sigma_con_flanker,
+             x = mu_con_flanker)) +
+  facet_grid(~ facet ) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+  geom_smooth(method = "lm",
+              color = "white",
+              se = FALSE) +
+  geom_point(aes(y = sigma_con_flanker,
+                 x = mu_con_flanker),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(-0.05,0)) +
+  xlab(expression(atop(italic(beta[0])* " + " *italic(u[0][i]), "Congruent RT"))) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i]), "Congruent IIV" )))
+  
+
+
+
+sigma_effect_flanker <- fit_flanker %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"sigma_congruencyincongruent"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_41 <- data.frame(mu_con_flanker = mu_con_flanker[,1],
+                     sigma_effect_flanker = sigma_effect_flanker[,1])
+
+plot_41 <-
+  dat_41 %>%
+  ggplot(aes(y = sigma_effect_flanker,
+             x = mu_con_flanker)) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  # spectral gradient
+  scale_fill_distiller(palette = "Spectral",
+                       direction = 1) +
+  # fitted line
+  geom_smooth(method = "lm",
+              color = "white",
+              # no standard error
+              se = FALSE) +
+  # add points
+  geom_point(aes(y = sigma_effect_flanker,
+                 x = mu_con_flanker),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  # more all space in plot
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  # y label
+  xlab(expression(atop(italic(beta[0])* " + " *italic(u[0][i]), "Congruent RT"))) +
+  # x label
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]),  "Flanker Effect on IIV"))) 
+  
+ 
+mu_effect_flanker <- fit_flanker %>%
+  coef() %>%
+  .$ID %>%
+  .[,,"congruencyincongruent"] %>%
+  data.frame() %>%
+  select(Estimate)
+
+
+dat_32 <- data.frame(mu_effect_flanker = mu_effect_flanker[,1],
+                     sigma_con_flanker = sigma_con_flanker[,1])
+dat_32$facet <- "Flanker"
+plot_32 <- dat_32 %>%
+  ggplot(aes(x = mu_effect_flanker,
+             y = sigma_con_flanker)) +
+  facet_grid(~ facet) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+  geom_smooth(method = "lm",
+              color = "white",
+              se = FALSE) +
+  geom_point(aes(x = mu_effect_flanker,
+                 y = sigma_con_flanker),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  xlab(expression(atop(italic(beta[1])* " + " *italic(u[1][i]),  "Flanker Effect on RT" ))) +
+  ylab(expression(atop(italic(eta[0])* " + " *italic(u[2][i]), "Congruent IIV"))) 
+
+
+
+dat_42 <- data.frame(mu_effect_flanker = mu_effect_flanker[,1],
+                     sigma_effect_flanker = sigma_effect_flanker[,1])
+
+
+plot_42 <- dat_42 %>%
+  ggplot(aes(y = mu_effect_flanker,
+             x =  sigma_effect_flanker )) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14)) +
+  stat_density_2d(aes(fill = ..density..),
+                  geom = "raster",
+                  contour = FALSE,
+                  alpha = .75,
+                  show.legend = F) +
+  scale_fill_distiller(palette= "Spectral",
+                       direction=1) +
+  geom_smooth(method = "lm",
+              color = "white",
+              se = FALSE) +
+  geom_point(aes(y = mu_effect_flanker,
+                 x = sigma_effect_flanker),
+             size = 2,
+             color = "black",
+             alpha = 0.5) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(-0.02,0) ) + 
+  xlab(expression(atop(italic(beta[1])* " + " *italic(u[1][i]), "Flanker Effect on RT"))) +
+  ylab(expression(atop(italic(eta[1])* " + " *italic(u[3][i]), "Flanker Effect on IIV"))) 
+
+
+Fig_6 <- cowplot::plot_grid(cowplot::plot_grid(plot_31, plot_41, nrow = 2), 
+                   cowplot::plot_grid(plot_32, plot_42, nrow = 2), nrow = 1)
+
+Fig_6
+```
+
+<img src="figures/README-unnamed-chunk-42-1.png" width="80%" style="display: block; margin: auto;" />
+
+We then performed a sensitivty analysis for *ν* in the LKJ prior distrbution. The following is the hypothesis testing function:
+
+``` r
+# function to compute posterior probabilities
+brms_cortest <- function(fit, dimension, eta){
+  
+ post_samps <- fit %>% 
+               posterior_samples(pars = "cor") 
+  
+
+ prior_samps <- rlkjcorr(n = 10000, K = dimension, eta = eta)[,,1][,2]
+  post <- apply(post_samps, 2, atanh) 
+  prior <- atanh(prior_samps)
+  col_names <- substring(colnames(post), 9)
+  post_dense_0  <- unlist( lapply(1:ncol(post), function(x) dnorm(0, mean(post[, x]), sd(post[,x]))) )
+  dense_greater  <- unlist( lapply(1:ncol(post), function(x) (1 - pnorm(0, mean(post[,x]), sd(post[,x]))) * 2))
+  dense_lesser  <- unlist( lapply(1:ncol(post), function(x) (pnorm(0, mean(post[,x]), sd(post[,x]))) * 2))
+  
+  prior_dense_0 <-  dnorm(0, mean(prior), sd(prior))
+  BF_01 <- post_dense_0 / prior_dense_0
+  BF_1u <- dense_greater * (1/ BF_01)
+  BF_2u <- dense_lesser * (1/ BF_01)
+  
+  BF_helper <- function (BF_null, BF_positive, BF_negative) {
+    c(BF_null, BF_positive, BF_negative)/sum(BF_null, BF_positive, 
+                                             BF_negative)
+  }
+  
+  
+  
+  post_prob <- data.frame(round(t(mapply(BF_helper, BF_01, BF_1u, BF_2u)), 3))
+  colnames(post_prob) <-c("null_prob", "pos_prob", "neg_prob")
+  dat <- cbind(data.frame(parameter = col_names, 
+                    post_mean = as.numeric(colMeans(post_samps)),  
+                    post_sd = as.numeric(apply(post_samps, 2, sd)),
+                    BF_01 = log(BF_01), 
+                    BF_10 = log(1/ BF_01)),
+               post_prob)
+  dat
+}
+```
+
+Figure 7:
+
+``` r
+nu_values <- seq(0.1, 4, length.out = 20)
+
+stroop_sens <- lapply(1:length(nu_values), function(x)  cbind(brms_cortest(fit = fit_stroop, 
+                                                                     dimension = 4, 
+                                                                     eta = nu_values[x])[c(2:5),c(1,5)], 
+                                                              data.frame(nu = (nu_values[x]))))
+
+flank_sens <- lapply(1:length(nu_values), function(x)  cbind(brms_cortest(fit = fit_flank, 
+                                                                           dimension = 4, 
+                                                                           eta = nu_values[x])[c(2:5),c(1,5)], 
+                                                              data.frame(nu = (nu_values[x]))))
+
+
+names(stroop_sens) <- names(flank_sens) <- nu_values
+
+
+dat_stroop_sens <- do.call(rbind.data.frame, stroop_sens)
+dat_stroop_sens$outcome <- "Stroop"
+
+dat_flank_sens <- do.call(rbind.data.frame, flank_sens)
+dat_flank_sens$outcome <- "Flanker"
+
+# legend 
+sens_legend <- dat_stroop_sens %>% 
+  ggplot() + 
+  facet_wrap(~ outcome) +
+  geom_hline(yintercept = log(.33), 
+             linetype = "dotted") +
+  geom_hline(yintercept = log(3), 
+             linetype = "dotted") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=log(3), ymax=Inf, alpha=0.30, fill="grey90") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=-Inf, ymax=log(.33), alpha=0.30, fill="grey90") +
+  geom_line(aes( x = nu, color = parameter, y= BF_10), size = 2) +
+  scale_color_manual(name = "Relation",
+                     breaks = c("Intercept__sigma_Intercept",
+                                "Intercept__sigma_congruencyincongruent",
+                                "congruencyincongruent__sigma_Intercept",
+                               "congruencyincongruent__sigma_congruencyincongruent"),
+                     labels = c(expression(italic("cor")*"("*italic( u[0][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[0][i]* ","*u[3][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[3][i])*")")
+                                ),
+                     
+                     values = c("#999999", "#E69F00", "#56B4E9", "#009E73")) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.minor.x  = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "top",
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  xlab(expression("LKJ  " * italic(nu))) +
+  ylab(expression("log("*italic(BF[10])*")"))
+
+sens_legend <- get_legend(sens_legend) 
+
+# stroop
+sens_stroop <- dat_stroop_sens %>% 
+  ggplot() + 
+  facet_wrap(~ outcome) +
+  geom_hline(yintercept = log(.33), 
+             linetype = "dotted") +
+  geom_hline(yintercept = log(3), 
+             linetype = "dotted") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=log(3), ymax=Inf, alpha=0.30, fill="grey90") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=-Inf, ymax=log(.33), alpha=0.30, fill="grey90") +
+  geom_line(aes( x = nu, color = parameter, y= BF_10), size = 2) +
+  scale_color_manual(name = "Relation",
+                     breaks = c("Intercept__sigma_Intercept",
+                                "Intercept__sigma_congruencyincongruent",
+                                "congruencyincongruent__sigma_Intercept",
+                                "congruencyincongruent__sigma_congruencyincongruent"),
+                     labels = c(expression(italic("cor")*"("*italic( u[0][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[0][i]* ","*u[3][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[3][i])*")")),
+                     values = c("#999999", "#E69F00", "#56B4E9", "#009E73")) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.minor.x  = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "none",
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  xlab(expression("LKJ  " * italic(nu))) +
+  ylab(expression("log("*italic(BF[10])*")"))
+
+
+# flanker
+sens_flank <- dat_flank_sens %>% 
+  ggplot() + 
+  facet_wrap(~ outcome) +
+  geom_hline(yintercept = log(.33), 
+             linetype = "dotted") +
+  geom_hline(yintercept = log(3), 
+             linetype = "dotted") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=log(3), ymax=Inf, alpha=0.30, fill="grey90") +
+  annotate("rect", 
+           xmin=-Inf, 
+           xmax=Inf, ymin=-Inf, ymax=log(.33), alpha=0.30, fill="grey90") +
+  geom_line(aes( x = nu, color = parameter, y= BF_10), size = 2) +
+  scale_color_manual(name = "Relation",
+                     breaks = c("Intercept__sigma_Intercept",
+                                "Intercept__sigma_congruencyincongruent",
+                                "congruencyincongruent__sigma_Intercept",
+                                "congruencyincongruent__sigma_congruencyincongruent"),
+                     labels = c(expression(italic("cor")*"("*italic( u[0][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[0][i]* ","*u[3][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[2][i])*")"),
+                                expression(italic("cor")*"("*italic( u[1][i]* ","*u[3][i])*")")),
+                     values = c("#999999", "#E69F00", "#56B4E9", "#009E73")) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.minor.x  = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "none",
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size= 14)) +
+  xlab(expression("LKJ  " * italic(nu))) +
+  ylab(expression("log("*italic(BF[10])*")"))
+
+plot_7 <- plot_grid(sens_legend, 
+                    plot_grid(sens_stroop, 
+                              sens_flank, 
+                              nrow = 1),  
+                    nrow = 2, 
+                    rel_heights = c(1,10))
+plot_7
+```
+
+<img src="figures/README-unnamed-chunk-44-1.png" width="80%" style="display: block; margin: auto;" />
