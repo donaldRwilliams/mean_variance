@@ -877,5 +877,261 @@ me_stroop_plot <- coef(fit_stroop_me, probs = c(0.05, 0.95))$ID[,,2] %>%
 
 Combine plots:
 ```{r}
-plot_grid(me_stroop_plot, melsm_stroop_plot)
+plot_stroop <- plot_grid(me_stroop_plot, melsm_stroop_plot)
+```
+
+
+Next the Flanker task. The MELSM is plotted with:
+```{r}
+coefs_nonreg <- unlist(lapply(1:121, function(x) coefficients(lm(rt ~ congruency, data = subset(flanker, ID == x)))[2]))
+
+# "flanker effect"
+melsm_flanker <- round(posterior_summary(fit_flank, pars = "b_")[3,1], 3)
+
+
+
+dat_flanker <- data.frame(y = coefs_nonreg, 
+                         index= 1:121) %>% 
+              arrange(y) %>%
+              mutate(index2 = as.factor(1:121))
+
+# melsm
+melsm_flanker_plot <- coef(fit_flank, probs = c(0.05, 0.95))$ID[,,2] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < melsm_flanker & Q95 > melsm_flanker, 0, 1)),
+         index = as.factor(1:121),
+         type = "MELSM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = melsm_flanker,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(beta[1])* " + " *italic(u[1][i])*"  (ms)", "Flanker Effect on RT"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  xlab("") + 
+  geom_path(inherit.aes = F, 
+            data = dat_flanker, 
+            aes(x = as.numeric(index2), 
+                y = y), 
+            color = "grey",
+            size = 1.5, alpha = 0.75) +
+  scale_y_continuous(breaks = seq(-.1, .2, 0.05), 
+                     labels = seq(-.1, .2, 0.05) * 1000) +
+  scale_x_discrete(expand = c(0.015, 0.015)) +
+  ggtitle("")
+
+# melsm_flanker_plot
+```
+
+
+Now the Flanker mixed model:
+```{r}
+me_flanker <- round(posterior_summary(fit_flank_me, pars = "b_")[2,1], 3)
+
+# me
+me_flanker_plot <- coef(fit_flank_me, probs = c(0.05, 0.95))$ID[,,2] %>% 
+  data.frame() %>%
+  arrange(Estimate) %>%
+  mutate(sig = as.factor(ifelse(Q5 < me_flanker & Q95 > me_flanker, 0, 1)),
+         index = as.factor(1:121),
+         type = "MELSM") %>%
+  ggplot() +
+  facet_grid(~ type ) +
+  geom_errorbar(aes(x = index, 
+                    ymin = Q5, 
+                    ymax = Q95, 
+                    color = sig), 
+                show.legend = F,
+                width = 0) +
+  geom_hline(yintercept = me_flanker,
+             alpha = 0.50,
+             linetype = "twodash") +
+  geom_hline(yintercept = 0,
+             alpha = 0.50,
+             linetype = "dotted") +
+  geom_point(aes(x = index, 
+                 y = Estimate,
+                 group = sig),
+             size = 2, 
+             alpha = 0.75) +
+  theme_bw(base_family = "Times") +
+  # plot options
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14)) +
+  ylab(expression(atop(italic(beta[1])* " + " *italic(u[1][i])*"  (ms)", "Flanker Effect on RT"))) +
+  scale_color_manual(values = c("#009E73", "#CC79A7")) +
+  xlab("") +
+  xlab("") + 
+  geom_path(inherit.aes = F, 
+            data = dat_flanker, 
+            aes(x = as.numeric(index2), 
+                y = y), 
+            color = "grey",
+            size = 1.5, alpha = 0.75) +
+  scale_y_continuous(breaks = seq(-.1, .2, 0.05), 
+                     labels = seq(-.1, .2, 0.05) * 1000) +
+  scale_x_discrete(expand = c(0.015, 0.015)) +
+  ggtitle("Flanker")
+```
+
+
+Combine plots:
+```{r}
+# flanker plot
+plot_flanker <-  plot_grid(me_flanker_plot, melsm_flanker_plot)
+
+# panel A
+A <- plot_grid(plot_stroop, plot_flanker, nrow = 2)
+```
+
+The above is Panel A. Panel B highlights shrinkage from the Flanker model:
+
+
+```{r, message=F, warning=F}
+coefs_nonreg <- lapply(1:121, function(x) coefficients(lm(rt ~ congruency, data = subset(flanker, ID == x))))
+
+non_pooled <- do.call(rbind.data.frame, coefs_nonreg)
+colnames(non_pooled) <- c("Congruent RT", "Flanker Effect on RT")
+non_pooled$type <- "Empirical"
+non_pooled$id <- 1:121
+
+#melsm
+pooled_melsm <- coef(fit_flank)$ID[,1,1:2] %>% data.frame()
+colnames(pooled_melsm) <- c("Congruent RT", "Flanker Effect on RT")
+pooled_melsm$type <- "Hierarchical"
+pooled_melsm$id <- 1:121
+
+#me
+pooled_me <- coef(fit_flank_me)$ID[,1,1:2] %>% data.frame()
+colnames(pooled_me) <-  c("Congruent RT", "Flanker Effect on RT")
+pooled_me$type <- "Hierarchical"
+pooled_me$id <- 1:121
+
+pooled_melsm <- rbind.data.frame(non_pooled, pooled_melsm)
+pooled_melsm$model <- "MELSM"
+
+pooled_me <- rbind.data.frame(non_pooled, pooled_me)
+pooled_me$model <- "MEM"
+
+# for legend
+leg <- ggplot(pooled_melsm, aes(y = pooled_melsm$`Congruent RT`, 
+                                 x = pooled_melsm$`Flanker Effect on RT`)) +
+  geom_line(aes(group = id), 
+            alpha = 0.25, 
+            size = 1) +
+  geom_point(aes(group = id, 
+                 color = type), 
+             size = 2.5, 
+             alpha = 0.75) +
+  facet_grid(~ model) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "top") +
+  guides(colour = guide_legend(override.aes = list(alpha=1))) +
+  scale_color_manual(values =c( "#0072B2", "#D55E00"), name = "")
+
+leg_pooled <- get_legend(leg)
+
+
+melsm_pooled_plot <- ggplot(pooled_melsm, aes( y = pooled_melsm$`Congruent RT`, 
+                                               x = pooled_melsm$`Flanker Effect on RT`)) +
+  geom_line(aes(group = id), alpha = 0.25, size = 1) +
+  geom_point(aes(group = id, color = type), size = 2.5, alpha = 0.75) +
+  facet_grid(~ model) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "none") +
+  guides(colour = guide_legend(override.aes = list(alpha=1))) +
+  scale_color_manual(values =c( "#0072B2", "#D55E00"), name = "") +
+  scale_y_continuous(limits = c(0.4, 0.9)) +
+  ggtitle("") +
+  ylab("Congruent RT") +
+  xlab("Flanker Effect on RT")
+
+
+me_pooled_plot <- ggplot(pooled_me, aes( y = pooled_me$`Congruent RT`, 
+                                         x = pooled_me$`Flanker Effect on RT`)) +
+  geom_line(aes(group = id), alpha = 0.25, size = 1) +
+  geom_point(aes(group = id, color = type), size = 2.5, alpha = 0.75) +
+  facet_grid(~ model) +
+  theme_bw(base_family = "Times") +
+  theme(panel.grid.major.x = element_blank(), 
+        panel.grid.minor.y = element_blank(),
+        axis.title = element_text(size = 14),
+        title = element_text(size = 14),
+        strip.background = element_rect(fill = "grey94"),
+        strip.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        legend.position = "none") +
+  guides(colour = guide_legend(override.aes = list(alpha=1))) +
+  scale_color_manual(values =c( "#0072B2", "#D55E00"), name = "") +
+  ggtitle("Flanker") +
+  ylab("Congruent RT") +
+  xlab("Flanker Effect on RT")
+
+# plot B
+B <- plot_grid("", me_pooled_plot, 
+               melsm_pooled_plot, "", 
+               nrow = 1, 
+               rel_widths = c(1.5,8, 8, 1))
+
+# add legend to plot B
+B <- plot_grid(leg_pooled, B, 
+               nrow = 2, 
+               rel_heights = c(1,10))
+
+# combined plot in paper
+A_and_B <- plot_grid(A, "", B, nrow = 3, rel_heights = c(1.5,.1,1))
+```
+
+Panel A:
+```{r}
+A
+```
+
+Panel B:
+```{r}
+B
 ```
